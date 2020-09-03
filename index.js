@@ -18,41 +18,71 @@ const getMostDrawnKeyValueObject = (data) => {
   return outputData;
 }
 
-const commonPairs = (data, jsonObj) => {
-  var array = data;
-  // ALL PAIRS
-  var pairs = array.flatMap(
-    (v, i) => array.slice(i + 1).map(w => [v.number, w.number])
-  );
-  // DRAWS
+const getDrawsArray = (data) => {
+  let outputData = [];
   const keyCheck = ["N1", "N2", "N3", "N4", "N5", "N6", "BN"];
-  let draws = [];
   data.map((r) => {
+    var res = [];
     for (var k in r) {
       if (keyCheck.indexOf(k) > -1) {
-        draws.push(outputData[r[k]])
+        res.push(r[k]);
       }
     }
+    outputData.push(res);
   })
-  // pairs
-  // DRAW...
-  return pairs;
+  return outputData;
+}
+
+// All Combinations for one draw Pairs
+// for (var i = 0; i <= 6; i++) {
+//   for (var j = 0; j <= 6; j++) {
+//     if (i < j) {
+//       console.log(i + '-' + j);
+//       var x = [mock[0][j], mock[0][i]].sort().toString();
+//       if (!output[x]) output[x] = 1;
+//       else { output[x]++; };
+//     }
+//   }
+// }
+
+const commonPairs = (draws) => {
+  // Input:
+  var output = {};
+  // output all combinations found each draw
+  console.log(draws.length);
+  for (var z = 0; z < draws.length; z++) {
+    var draw = draws[z];
+    for (var i = 0; i <= 6; i++) {
+      for (var j = 0; j <= 6; j++) {
+        if (i < j) {
+          var x = [draw[j], draw[i]].sort().toString();
+          if (!output[x]) output[x] = 1;
+          else { output[x]++; };
+        }
+      }
+    }
+  }
+  return output;
 }
 
 csv()
   .fromFile(csvFilePath)
   .then((jsonObj) => {
+    // Get the length of draws
     const drawLength = jsonObj.length;
+    // Simple Strategy
     const output = getMostDrawnKeyValueObject(jsonObj);
     var arr = [];
+    // Output: { number: n, times: n, chance: n + " chance" }
     for (var key in output) {
       var chance = (Number(output[key]) / drawLength * 100) + " %";
       arr.push({ number: key, times: output[key], chance: chance + " chance" });
     }
+    // Sort the array - low to high
     var orderedOutput = arr.sort(function (a, b) { return a.times - b.times });
-    // Highest odd strategy
+    // Highest odd strategy - Select the top 6 results
     var highestOdds = orderedOutput.slice(Math.max(arr.length - 6, 0));
-    // 2 lowest, 2 Mid, 2 Highest Odds strategy
+    // Low mid high strategy - Select 2 lowest, 2 Mid, 2 Highest Odds strategy
     var lowMidHigh = [
       orderedOutput[0],
       orderedOutput[1],
@@ -61,25 +91,27 @@ csv()
       orderedOutput[orderedOutput.length - 2],
       orderedOutput[orderedOutput.length - 1],
     ]
+    // Get all Draws Key Values
+    var draws = getDrawsArray(jsonObj);
     // 3 of the most drawn numbers and 3 of the most likely pairs strategy
-    //
-    // Three Common Pairs strategy (127 combinations)
-    // [20, 40, 10, 12, 15, 21, 29];
-    // [20, 41, 10, 12, 15, 21, 41];
-    // 20-40, 20-10, 20-12, 20-15, 20-21, 20-29 //
-    // 40-10, 40-12, 40-15, 40-21, 40-29 //
-    // 10-12, 10-15, 10-21, 10-29 //
-    // 12-15, 12-21, 12-29 //
-    // 15-21, 15-29 //
-    // 21-29 //
-    var ThreeMostCommonPairs = commonPairs(orderedOutput, jsonObj);
-    // ...
+    var ThreeMostCommonPairs = commonPairs(draws); //.slice(Math.max(arr.length - 6, 0));
+    var arr3 = [];
+    // Output: { number: n, times: n, chance: n + " chance" }
+    for (var key in ThreeMostCommonPairs) {
+      var chance = (Number(ThreeMostCommonPairs[key]) / drawLength * 100) + " %";
+      arr3.push({ number: key, times: ThreeMostCommonPairs[key], chance: chance + " chance" });
+    }
+    // Sort the array - low to high
+    var orderedOutput3 = arr3.sort(function (a, b) { return a.times - b.times });
+    // Highest odd strategy - Select the top 6 results
+    var highestOdds3 = orderedOutput3.slice(Math.max(arr3.length - 6, 0));
     // output
     var out = {
       drawLength,
       highestOdds,
       lowMidHigh,
-      ThreeMostCommonPairs
+      // ThreeMostCommonPairs
+      highestOdds3
     };
     console.log(out);
   })
